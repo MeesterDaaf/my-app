@@ -40,5 +40,3 @@ export const search = (query, maxResults) =>
   })
     .then((res) => res.json())
     .then((data) => data.books);
-
-console.log(getAll());
