@@ -12,9 +12,12 @@ const Search = ({ updateShelve, books, setBooks }) => {
     if (query) {
       try {
         const result = await BooksAPI.search(query, 5);
-        setBooks(result);
+
+        // Ensure result is an array, otherwise set to an empty array
+        setBooks(Array.isArray(result) ? result : []);
       } catch (error) {
         console.error("Error fetching books:", error);
+        setBooks([]); // Set books to empty array on error
       }
     } else {
       setBooks([]); // Clear books if query is empty
