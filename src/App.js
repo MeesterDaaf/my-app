@@ -1,15 +1,20 @@
 // App.js
 import "./App.css";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Shelve from "./Shelve";
 import Search from "./Search";
-import currentBooks from "./CurrentBooks";
 
 const App = () => {
-  const [books, setBooks] = useState([]);
+  // Load books from local storage or use an empty array if none exist
+  const [books, setBooks] = useState(() => {
+    const savedBooks = localStorage.getItem("books");
+
+    return savedBooks ? JSON.parse(savedBooks) : [];
+  });
+
   const [shelves, setShelves] = useState({
-    currentlyReading: currentBooks,
+    currentlyReading: books,
     wantToRead: [],
     read: [],
   });
@@ -30,6 +35,11 @@ const App = () => {
       return updatedShelves;
     });
   };
+
+  // Save the books array to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("books", JSON.stringify(books));
+  }, [books]);
 
   return (
     <Router>
