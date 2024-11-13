@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom"; // Import Link for navigation
 import * as BooksAPI from "./BooksAPI";
 import BookList from "./BookList";
-import SearchButton from "./SearchButton";
 
 const Search = ({ updateShelve, books, setBooks }) => {
   const [query, setQuery] = useState("");
@@ -16,15 +16,19 @@ const Search = ({ updateShelve, books, setBooks }) => {
       } catch (error) {
         console.error("Error fetching books:", error);
       }
+    } else {
+      setBooks([]); // Clear books if query is empty
     }
     console.log("Books:", books);
   };
 
-  
   return (
     <div className="search-books">
       <div className="search-books-bar">
-        <SearchButton title="Close" className="close-search" />
+        {/* Link to navigate back to the main page */}
+        <Link to="/" className="close-search">
+          Close
+        </Link>
         <div className="search-books-input-wrapper">
           <input
             type="text"
