@@ -1,29 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom"; // Import Link for navigation
-import * as BooksAPI from "./BooksAPI";
+
 import BookList from "./BookList";
 
-const Search = ({ updateShelve, books, setBooks }) => {
+const Search = ({ updateShelve, books, onSearch }) => {
   const [query, setQuery] = useState("");
-
-  const handleSearch = async (query) => {
-    setQuery(query);
-
-    if (query) {
-      try {
-        const result = await BooksAPI.search(query, 5);
-
-        // Ensure result is an array, otherwise set to an empty array
-        setBooks(Array.isArray(result) ? result : []);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-        setBooks([]); // Set books to empty array on error
-      }
-    } else {
-      setBooks([]); // Clear books if query is empty
-    }
-    console.log("Books:", books);
-  };
 
   return (
     <div className="search-books">
@@ -36,7 +17,10 @@ const Search = ({ updateShelve, books, setBooks }) => {
           <input
             type="text"
             value={query}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              onSearch(e.target.value);
+            }}
             placeholder="Search by title, author, or ISBN"
           />
         </div>

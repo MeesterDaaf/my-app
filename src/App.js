@@ -4,44 +4,64 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Shelve from "./Shelve";
 import Search from "./Search";
+import * as BooksAPI from "./BooksAPI";
 
 const App = () => {
-  // Load books from local storage or use an empty array if none exist
-  const [books, setBooks] = useState(() => {
-    const savedBooks = localStorage.getItem("books");
+  const [books, setBooks] = useState([]);
 
-    return savedBooks ? JSON.parse(savedBooks) : [];
-  });
+  useEffect(() => {
+    const fetchBooks = async () => {
+      const fetchedBooks = await BooksAPI.getAll();
+      setBooks(fetchedBooks);
+    };
+    fetchBooks();
+  }, []);
 
-  const [shelves, setShelves] = useState({
-    currentlyReading: books,
-    wantToRead: [],
-    read: [],
-  });
-
-  const updateShelve = (book, newShelve) => {
-    setShelves((prevShelves) => {
-      const updatedShelves = { ...prevShelves };
-      // Verwijder het boek uit de huidige shelve
-      Object.keys(updatedShelves).forEach((shelve) => {
-        updatedShelves[shelve] = updatedShelves[shelve].filter(
-          (b) => b.id !== book.id
-        );
-      });
-      // Voeg het boek toe aan de nieuwe shelve
-      if (newShelve !== "none") {
-        updatedShelves[newShelve].push(book);
-      }
-      return updatedShelves;
-    });
+  const updateBookShelf = async (book, shelf) => {
+    await BooksAPI.update(book, shelf);
+    // Update local state or refetch books here
+    book.shelf = shelf;
+    setBooks((prevBooks) =>
+      prevBooks.map((b) => (b.id === book.id ? { ...b, shelf } : b))
+    );
   };
 
-  // Save the books array to local storage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("books", JSON.stringify(books));
-  }, [books]);
+  const handleSearch = async (query) => {
+    if (query) {
+      try {
+        const result = await BooksAPI.search(query, 5);
+
+        // Ensure result is an array, otherwise set to an empty array
+        setBooks(Array.isArray(result) ? result : []);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]); // Set books to empty array on error
+      }
+    } else {
+      setBooks([]); // Clear books if query is empty
+    }
+  };
+
+  const shelves = [
+    {
+      title: "Currently Reading",
+      id: "currentlyReading",
+      books: books.filter((book) => book.shelf === "currentlyReading"),
+    },
+    {
+      title: "Want to Read",
+      id: "wantToRead",
+      books: books.filter((book) => book.shelf === "wantToRead"),
+    },
+    {
+      title: "Read",
+      id: "read",
+      books: books.filter((book) => book.shelf === "read"),
+    },
+  ];
 
   return (
+    // Your component JSX here
     <Router>
       <div className="app">
         <Routes>
@@ -54,21 +74,15 @@ const App = () => {
                   <h1>MyReads</h1>
                 </div>
                 <div className="list-books-content">
-                  <Shelve
-                    title="Currently Reading"
-                    books={shelves.currentlyReading}
-                    updateShelve={updateShelve}
-                  />
-                  <Shelve
-                    title="Want to Read"
-                    books={shelves.wantToRead}
-                    updateShelve={updateShelve}
-                  />
-                  <Shelve
-                    title="Read"
-                    books={shelves.read}
-                    updateShelve={updateShelve}
-                  />
+                  {shelves.map((shelve) => (
+                    <Shelve
+                      key={shelve.id}
+                      title={shelve.title}
+                      books={shelve.books}
+                      updateShelve={updateBookShelf}
+                    />
+                  ))}
+                  ;
                 </div>
                 {/* Link to the search route */}
                 <div className="open-search">
@@ -83,9 +97,11 @@ const App = () => {
             path="/search"
             element={
               <Search
-                updateShelve={updateShelve}
                 books={books}
                 setBooks={setBooks}
+                // query={query}
+                onSearch={handleSearch}
+                updateShelve={updateBookShelf}
               />
             }
           />
