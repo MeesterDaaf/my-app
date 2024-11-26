@@ -8,6 +8,7 @@ import * as BooksAPI from "./BooksAPI";
 
 const App = () => {
   const [books, setBooks] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -19,10 +20,20 @@ const App = () => {
 
   const updateBookShelf = async (book, shelf) => {
     await BooksAPI.update(book, shelf);
-    // Update local state or refetch books here
-    book.shelf = shelf;
-    setBooks((prevBooks) =>
-      prevBooks.map((b) => (b.id === book.id ? { ...b, shelf } : b))
+
+    // Update the main shelf state
+    setBooks((prevBooks) => {
+      const existingBook = prevBooks.find((b) => b.id === book.id);
+      if (existingBook) {
+        return prevBooks.map((b) => (b.id === book.id ? { ...b, shelf } : b));
+      } else {
+        return [...prevBooks, { ...book, shelf }];
+      }
+    });
+
+    // Update the search results if the book is part of the search view
+    setSearchResults((prevResults) =>
+      prevResults.map((b) => (b.id === book.id ? { ...b, shelf } : b))
     );
   };
 
@@ -32,13 +43,24 @@ const App = () => {
         const result = await BooksAPI.search(query, 5);
 
         // Ensure result is an array, otherwise set to an empty array
-        setBooks(Array.isArray(result) ? result : []);
+        if (Array.isArray(result)) {
+          // Match search results with shelf data
+          const updatedResults = result.map((searchBook) => {
+            const existingBook = books.find((b) => b.id === searchBook.id);
+            return existingBook
+              ? { ...searchBook, shelf: existingBook.shelf }
+              : searchBook;
+          });
+          setSearchResults(updatedResults);
+        } else {
+          setSearchResults([]);
+        }
       } catch (error) {
         console.error("Error fetching books:", error);
-        setBooks([]); // Set books to empty array on error
+        setSearchResults([]);
       }
     } else {
-      setBooks([]); // Clear books if query is empty
+      setSearchResults([]); // Clear search results if query is empty
     }
   };
 
@@ -97,9 +119,7 @@ const App = () => {
             path="/search"
             element={
               <Search
-                books={books}
-                setBooks={setBooks}
-                // query={query}
+                books={searchResults}
                 onSearch={handleSearch}
                 updateShelve={updateBookShelf}
               />
